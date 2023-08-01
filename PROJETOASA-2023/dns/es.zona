@@ -1,0 +1,5 @@
+zone "es.br" {
+	type master;
+	file "/etc/bind/db.es.br";	
+	allow-transfer {any; };	
+};

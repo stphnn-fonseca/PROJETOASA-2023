@@ -1,0 +1,124 @@
+services:
+  dns:
+    build:
+      context: ./dns
+      dockerfile: Dockerfile
+    image: dns
+    container_name: dns
+    ports: 
+      - "53:53/tcp"
+      - "53:53/udp"
+    networks:
+      - asa-teste
+ 
+  segundario:
+    build:
+      context: ./dns/segundario
+      dockerfile: Dockerfile
+    image: se
+    container_name: se
+    ports: 
+      - "54:53/tcp"
+      - "54:53/udp"
+    networks:
+      - asa-teste
+
+  email:
+    build:
+      context: ./email
+      dockerfile: Dockerfile
+    image: email
+    container_name: email
+    ports:
+      - "25:25/tcp"
+      - "110:110/tcp"
+      - "143:143/tcp"
+    networks:
+      - asa-teste
+
+
+  webmail:
+    build:
+      context: ./webmail
+      dockerfile: Dockerfile
+    image: webmail
+    container_name: webmail
+    networks:
+     - asa-teste
+    volumes:
+      - rainloop:/var/www/html
+
+
+  db:
+    image: mysql:latest
+    volumes:
+      - db-data:/var/lib/mysql
+    restart: always
+    container_name: db
+    networks:
+      - asa-teste
+
+  portal:
+    build:
+      context: ./portal
+      dockerfile: Dockerfile
+    image: portal
+    depends_on:
+      - db
+    container_name: portal
+    volumes:
+      - portal:/var/www/html
+    networks:
+      - asa-teste
+
+  intranet:
+    build:
+      context: ./intranet
+      dockerfile: Dockerfile
+    image: intranet
+    container_name: intranet
+    depends_on:
+      - db
+    environment:
+      WORDPRESS_DB_HOST: db
+      WORDPRESS_DB_USER: wordpress
+      WORDPRESS_DB_PASSWORD: wordpress
+      WORDPRESS_DB_NAME: wordpress
+      WORDPRESS_TABLE_PREFIX: wp_intranet
+    volumes:
+      - intranet:/var/www/html
+    networks:
+      - asa-teste
+
+  proxy:
+    build:
+      context: ./proxy
+      dockerfile: Dockerfile
+    image: proxy
+    container_name: proxy
+    ports:
+      - "80:80"
+    depends_on:
+      - dns
+      - segundario
+      - portal
+      - email
+      - webmail
+      - intranet
+    networks:
+      - asa-teste
+
+#Docker Networks
+networks:
+ asa-teste:
+  driver: bridge
+
+#Docker volumes
+volumes:
+  proxy:
+  rainloop:
+  db-data:
+  wordpress:
+  portal:
+  intranet:
+ 
